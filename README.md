@@ -28,6 +28,7 @@ By default this module will create:
 When passing `rbac_policy` entries where `principal_id` is not yet known because the dependent resource does not exist yet, set the `skip_default_roles = true`.
 This is because one `rbac_policy` can contain several roles for the same principal, so to prevent TF from creating default roles for each time the same principal_id occurs
 they are deduplicated - this requires knowing the principal_id value at plan time.
+Alternatively, you could create the dependency resource first then re-enable default roles so the principal_id becomes known at plan time.
 
 ## Versioning
 

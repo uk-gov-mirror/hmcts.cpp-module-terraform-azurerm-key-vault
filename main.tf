@@ -158,7 +158,7 @@ resource "azurerm_role_assignment" "keyvault_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "keyvault_ado_key_vault_admin_role_assignment" {
-  for_each             = var.skip_ci_kv_admin_role ? {} : { "ado_key_vault_admin" : 1 }
+  count                = var.skip_ci_kv_admin_role ? 0 : 1
   principal_id         = data.azurerm_client_config.current.object_id # Pipeline runner identity
   scope                = azurerm_key_vault.key-vault.id
   role_definition_name = "Key Vault Administrator"
