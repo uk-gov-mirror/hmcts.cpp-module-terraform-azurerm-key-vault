@@ -175,31 +175,6 @@ func TestRoleAssignments_RbacDefaultDedupe(t *testing.T) {
 	assert.Contains(t, roleNames(summary.Default), "Key Vault Crypto User")
 }
 
-func TestRoleAssignments_RunnerAdminOnlyInput(t *testing.T) {
-	t.Parallel()
-
-	summary := planRoleAssignments(t, "rbac-runner-admin-only")
-
-	assert.Len(t, summary.Explicit, 0)
-	assert.Len(t, summary.Admin, 1)
-	assert.Equal(t, []string{"Key Vault Administrator"}, roleNames(summary.Admin))
-	assert.Len(t, summary.Default, 3)
-	assert.Contains(t, roleNames(summary.Default), "Key Vault Secrets User")
-	assert.Contains(t, roleNames(summary.Default), "Key Vault Certificate User")
-	assert.Contains(t, roleNames(summary.Default), "Key Vault Crypto User")
-}
-
-func TestRoleAssignments_DuplicateExplicitInput(t *testing.T) {
-	t.Parallel()
-
-	summary := planRoleAssignments(t, "rbac-duplicate-explicit")
-
-	assert.Len(t, summary.Explicit, 1)
-	assert.Equal(t, []string{"Key Vault Reader"}, roleNames(summary.Explicit))
-	assert.Len(t, summary.Admin, 1)
-	assert.Len(t, summary.Default, 3)
-}
-
 func TestRoleAssignments_MultiplePrincipals(t *testing.T) {
 	t.Parallel()
 
@@ -221,6 +196,37 @@ func TestRoleAssignments_CaseInsensitiveRoleMatching(t *testing.T) {
 	assert.Equal(t, []string{"Key Vault Reader"}, roleNames(summary.Explicit))
 	assert.Len(t, summary.Admin, 1)
 	assert.Equal(t, []string{"Key Vault Administrator"}, roleNames(summary.Admin))
+	assert.Len(t, summary.Default, 3)
+	assert.Contains(t, roleNames(summary.Default), "Key Vault Secrets User")
+	assert.Contains(t, roleNames(summary.Default), "Key Vault Certificate User")
+	assert.Contains(t, roleNames(summary.Default), "Key Vault Crypto User")
+}
+
+func TestRoleAssignments_SkipDefaultRoles(t *testing.T) {
+	t.Parallel()
+
+	summary := planRoleAssignments(t, "rbac-skip-default-roles")
+
+	assert.Len(t, summary.Explicit, 3)
+	assert.Contains(t, roleNames(summary.Explicit), "Key Vault Secrets User")
+	assert.Contains(t, roleNames(summary.Explicit), "Key Vault Reader")
+	assert.Contains(t, roleNames(summary.Explicit), "Key Vault Certificates Officer")
+
+	assert.Len(t, summary.Admin, 1)
+	assert.Equal(t, []string{"Key Vault Administrator"}, roleNames(summary.Admin))
+	assert.Len(t, summary.Default, 0)
+}
+
+func TestRoleAssignments_SkipCiKvAdminRole(t *testing.T) {
+	t.Parallel()
+
+	summary := planRoleAssignments(t, "rbac-skip-ci-kv-admin-role")
+
+	assert.Len(t, summary.Explicit, 1)
+	assert.Equal(t, []string{"Key Vault Reader"}, roleNames(summary.Explicit))
+
+	assert.Len(t, summary.Admin, 0)
+
 	assert.Len(t, summary.Default, 3)
 	assert.Contains(t, roleNames(summary.Default), "Key Vault Secrets User")
 	assert.Contains(t, roleNames(summary.Default), "Key Vault Certificate User")

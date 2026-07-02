@@ -5,14 +5,14 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "test" {
-  name     = "rg-kv-tt-rbac-runner-only"
+  name     = "rg-kv-tt-rbac-skip-default"
   location = "uksouth"
 }
 
 module "key_vault" {
   source = "../../../"
 
-  name                            = "kvttrunneronly001"
+  name                            = "kvttskipdefault001"
   location                        = azurerm_resource_group.test.location
   resource_group_name             = azurerm_resource_group.test.name
   tenant_id                       = data.azurerm_client_config.current.tenant_id
@@ -24,11 +24,20 @@ module "key_vault" {
   purge_protection_enabled        = false
   soft_delete_retention_days      = 7
   enable_rbac_authorization       = true
+  skip_default_roles              = true
 
   rbac_policy = [
     {
       principal_id         = data.azurerm_client_config.current.object_id
-      role_definition_name = "Key Vault Administrator"
+      role_definition_name = "Key Vault Secrets User"
+    },
+    {
+      principal_id         = data.azurerm_client_config.current.object_id
+      role_definition_name = "Key Vault Reader"
+    },
+    {
+      principal_id         = data.azurerm_client_config.current.object_id
+      role_definition_name = "Key Vault Certificates Officer"
     }
   ]
 }

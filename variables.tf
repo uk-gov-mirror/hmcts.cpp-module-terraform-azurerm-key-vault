@@ -181,6 +181,18 @@ variable "rbac_policy" {
   default = []
 }
 
+variable "skip_default_roles" {
+  description = "Whether to skip the creation of default roles for the Key Vault."
+  type        = bool
+  default     = false
+}
+
+variable "skip_ci_kv_admin_role" {
+  description = "Whether to skip the creation of the CI KV admin role for the Key Vault."
+  type        = bool
+  default     = false
+}
+
 variable "external_private_endpoint_map" {
   description = "Map of external private endpoints to VNet details"
   type = map(object({

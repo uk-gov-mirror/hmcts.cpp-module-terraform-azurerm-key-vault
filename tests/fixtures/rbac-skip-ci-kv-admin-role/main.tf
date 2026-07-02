@@ -5,14 +5,14 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "test" {
-  name     = "rg-kv-tt-rbac-duplicate"
+  name     = "rg-kv-tt-rbac-skip-admin"
   location = "uksouth"
 }
 
 module "key_vault" {
   source = "../../../"
 
-  name                            = "kvttdupe001"
+  name                            = "kvttskipadmin001"
   location                        = azurerm_resource_group.test.location
   resource_group_name             = azurerm_resource_group.test.name
   tenant_id                       = data.azurerm_client_config.current.tenant_id
@@ -24,12 +24,9 @@ module "key_vault" {
   purge_protection_enabled        = false
   soft_delete_retention_days      = 7
   enable_rbac_authorization       = true
+  skip_ci_kv_admin_role           = true
 
   rbac_policy = [
-    {
-      principal_id         = data.azurerm_client_config.current.object_id
-      role_definition_name = "Key Vault Reader"
-    },
     {
       principal_id         = data.azurerm_client_config.current.object_id
       role_definition_name = "Key Vault Reader"

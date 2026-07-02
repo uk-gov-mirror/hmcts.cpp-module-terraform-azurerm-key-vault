@@ -13,7 +13,7 @@ TERRATEST_TIMEOUT ?= 30
 	terratest-role-assignments-gotestsum
 
 az-login:
-	az login
+	@az account show >/dev/null 2>&1 || az login
 
 terratest-all: az-login
 	cd $(TERRATEST_DIR) && go test -v -timeout $(TERRATEST_TIMEOUT)m ./terratest

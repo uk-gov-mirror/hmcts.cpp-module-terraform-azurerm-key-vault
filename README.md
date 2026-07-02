@@ -25,6 +25,9 @@ By default this module will create:
 - `Key Vault Administrator` role assignment on the Service Principal that belongs to the ADO pipeline running it
 - `Key Vault Secrets User`, `Key Vault Certificate User` and `Key Vault Crypto User` role assignments on every principal id passed to this module within the `rbac_policy` variable.
 
+When passing `rbac_policy` entries where `principal_id` is not yet known because the dependent resource does not exist yet, set the `skip_default_roles = true`.
+This is because one `rbac_policy` can contain several roles for the same principal, so to prevent TF from creating default roles for each time the same principal_id occurs
+they are deduplicated - this requires knowing the principal_id value at plan time.
 
 ## Versioning
 
@@ -131,6 +134,7 @@ Quick reference (double check above for changes/updates):
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | n/a | `string` | `""` | no |
 | <a name="input_secret_permissions"></a> [secret\_permissions](#input\_secret\_permissions) | n/a | `list(string)` | <pre>[<br/>  "Set",<br/>  "List",<br/>  "Get",<br/>  "Delete",<br/>  "Recover",<br/>  "Purge"<br/>]</pre> | no |
 | <a name="input_secrets"></a> [secrets](#input\_secrets) | A map of secrets for the Key Vault. | `map(string)` | `{}` | no |
+| <a name="input_skip_default_roles"></a> [skip\_default\_roles](#input\_skip\_default\_roles) | Whether to skip the creation of default roles for the Key Vault. | `bool` | `false` | no |
 | <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name) | n/a | `string` | `""` | no |
 | <a name="input_soft_delete_retention_days"></a> [soft\_delete\_retention\_days](#input\_soft\_delete\_retention\_days) | n/a | `number` | `1` | no |
 | <a name="input_subnet_kv"></a> [subnet\_kv](#input\_subnet\_kv) | Subnet for key vault | `string` | `""` | no |

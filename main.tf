@@ -6,39 +6,21 @@ locals {
   ]
 
   default_roles_normalized = toset([for role in local.default_roles : lower(role)])
-
-  # Construct a map with unique keys for principal_id x role_definition_name combinations (as passed to this module).
-  # Role matching uses normalized keys for case-insensitive comparison while preserving the original input role value.
-  # Group by normalized principal_id x role_definition_name to safely handle duplicate inputs.
-  grouped_principal_roles = {
-    for policy in var.rbac_policy :
-    lower("${policy.principal_id}_${policy.role_definition_name}") => {
-      principal_id         = policy.principal_id
-      role_definition_name = policy.role_definition_name
-    }...
-  }
-
-  # Collapse grouped values by taking the first entry per normalized key.
-  all_principal_roles = {
-    for key, values in local.grouped_principal_roles :
-    key => values[0]
-  }
-
   # Remove role assignments that are already handled by dedicated module logic:
   # - default role assignments are created via keyvault_rbac_default_role_assignment
-  # - runner Key Vault Administrator is created via keyvault_ado_key_vault_admin_role_assignment
-  runner_admin_role_key = lower("${data.azurerm_client_config.current.object_id}_Key Vault Administrator")
+  principal_roles_map = { for i, policy in var.rbac_policy : i => policy }
   filtered_principal_roles = {
-    for key, value in local.all_principal_roles :
-    key => value
-    if !contains(local.default_roles_normalized, lower(value.role_definition_name)) && key != local.runner_admin_role_key
+    for _, rbac in local.principal_roles_map :
+    format("%s_%s", rbac.principal_id, rbac.role_definition_name) => rbac
+    if !contains(local.default_roles_normalized, lower(rbac.role_definition_name))
   }
 
   # Construct a map with unique keys for principal_id x default_role combinations
   # One principal_id can exist multiple times in the rbac_policies associated to multiple roles so it is deduplicated with distinct()
+  # Cannot be used with principal_id values unknown at plan time
   default_principal_roles = {
     for pair in setproduct(distinct(var.rbac_policy[*].principal_id), local.default_roles) :
-    lower("${pair[0]}_${pair[1]}") => {
+    format("%s_%s", pair[0], pair[1]) => {
       principal_id         = pair[0]
       role_definition_name = pair[1]
     }
@@ -168,7 +150,7 @@ resource "azurerm_private_endpoint" "external_endpoint_vault" {
 }
 
 resource "azurerm_role_assignment" "keyvault_group_role_assignment" {
-  for_each = local.filtered_principal_roles
+  for_each = var.skip_default_roles ? local.principal_roles_map : local.filtered_principal_roles
 
   principal_id         = each.value.principal_id
   scope                = azurerm_key_vault.key-vault.id
@@ -176,13 +158,14 @@ resource "azurerm_role_assignment" "keyvault_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "keyvault_ado_key_vault_admin_role_assignment" {
+  for_each             = var.skip_ci_kv_admin_role ? {} : { "ado_key_vault_admin" : 1 }
   principal_id         = data.azurerm_client_config.current.object_id # Pipeline runner identity
   scope                = azurerm_key_vault.key-vault.id
   role_definition_name = "Key Vault Administrator"
 }
 
 resource "azurerm_role_assignment" "keyvault_rbac_default_role_assignment" {
-  for_each = local.default_principal_roles
+  for_each = var.skip_default_roles ? {} : local.default_principal_roles
 
   principal_id         = each.value.principal_id
   scope                = azurerm_key_vault.key-vault.id
