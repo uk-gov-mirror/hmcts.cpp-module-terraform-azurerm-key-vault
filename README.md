@@ -134,6 +134,7 @@ Quick reference (double check above for changes/updates):
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | n/a | `string` | `""` | no |
 | <a name="input_secret_permissions"></a> [secret\_permissions](#input\_secret\_permissions) | n/a | `list(string)` | <pre>[<br/>  "Set",<br/>  "List",<br/>  "Get",<br/>  "Delete",<br/>  "Recover",<br/>  "Purge"<br/>]</pre> | no |
 | <a name="input_secrets"></a> [secrets](#input\_secrets) | A map of secrets for the Key Vault. | `map(string)` | `{}` | no |
+| <a name="input_skip_ci_kv_admin_role"></a> [skip\_ci\_kv\_admin\_role](#input\_skip\_ci\_kv\_admin\_role) | Whether to skip the creation of the CI KV admin role for the Key Vault. | `bool` | `false` | no |
 | <a name="input_skip_default_roles"></a> [skip\_default\_roles](#input\_skip\_default\_roles) | Whether to skip the creation of default roles for the Key Vault. | `bool` | `false` | no |
 | <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name) | n/a | `string` | `""` | no |
 | <a name="input_soft_delete_retention_days"></a> [soft\_delete\_retention\_days](#input\_soft\_delete\_retention\_days) | n/a | `number` | `1` | no |
