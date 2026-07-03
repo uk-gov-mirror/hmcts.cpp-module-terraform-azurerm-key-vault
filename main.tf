@@ -4,6 +4,27 @@ locals {
     "Key Vault Certificate User",
     "Key Vault Crypto User",
   ]
+
+  default_roles_normalized = toset([for role in local.default_roles : lower(role)])
+  # Remove role assignments that are already handled by dedicated module logic:
+  # - default role assignments are created via keyvault_rbac_default_role_assignment
+  principal_roles_map = { for i, policy in var.rbac_policy : i => policy }
+  filtered_principal_roles = {
+    for _, rbac in local.principal_roles_map :
+    format("%s_%s", rbac.principal_id, rbac.role_definition_name) => rbac
+    if !contains(local.default_roles_normalized, lower(rbac.role_definition_name))
+  }
+
+  # Construct a map with unique keys for principal_id x default_role combinations
+  # One principal_id can exist multiple times in the rbac_policies associated to multiple roles so it is deduplicated with distinct()
+  # Cannot be used with principal_id values unknown at plan time
+  default_principal_roles = {
+    for pair in setproduct(distinct(var.rbac_policy[*].principal_id), local.default_roles) :
+    format("%s_%s", pair[0], pair[1]) => {
+      principal_id         = pair[0]
+      role_definition_name = pair[1]
+    }
+  }
 }
 
 data "azurerm_client_config" "current" {}
@@ -129,7 +150,7 @@ resource "azurerm_private_endpoint" "external_endpoint_vault" {
 }
 
 resource "azurerm_role_assignment" "keyvault_group_role_assignment" {
-  for_each = { for i, policy in var.rbac_policy : i => policy }
+  for_each = var.skip_default_roles ? local.principal_roles_map : local.filtered_principal_roles
 
   principal_id         = each.value.principal_id
   scope                = azurerm_key_vault.key-vault.id
@@ -137,19 +158,14 @@ resource "azurerm_role_assignment" "keyvault_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "keyvault_ado_key_vault_admin_role_assignment" {
+  count                = var.skip_ci_kv_admin_role ? 0 : 1
   principal_id         = data.azurerm_client_config.current.object_id # Pipeline runner identity
   scope                = azurerm_key_vault.key-vault.id
   role_definition_name = "Key Vault Administrator"
 }
 
 resource "azurerm_role_assignment" "keyvault_rbac_default_role_assignment" {
-  for_each = {
-    for pair in setproduct(var.rbac_policy[*].principal_id, local.default_roles) :
-    "${pair[0]}_${pair[1]}" => {
-      principal_id         = pair[0]
-      role_definition_name = pair[1]
-    }
-  }
+  for_each = var.skip_default_roles ? {} : local.default_principal_roles
 
   principal_id         = each.value.principal_id
   scope                = azurerm_key_vault.key-vault.id

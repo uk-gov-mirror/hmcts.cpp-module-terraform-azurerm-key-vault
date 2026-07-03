@@ -22,3 +22,9 @@ terraform.tfvars
 *.tfstate
 *.tfstate.backup
 *.terraform.lock.hcl
+example/.terraform.lock.hcl
+
+# Local Terratest and toolchain files
+plan.out
+.tool-versions
+.too-versions

@@ -6,6 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v51.0.0+incompatible
 	github.com/gruntwork-io/terratest v0.43.13
 	github.com/stretchr/testify v1.8.4
+	gotest.tools/gotestsum v1.12.0
 )
 
 require (

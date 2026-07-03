@@ -25,6 +25,10 @@ By default this module will create:
 - `Key Vault Administrator` role assignment on the Service Principal that belongs to the ADO pipeline running it
 - `Key Vault Secrets User`, `Key Vault Certificate User` and `Key Vault Crypto User` role assignments on every principal id passed to this module within the `rbac_policy` variable.
 
+When passing `rbac_policy` entries where `principal_id` is not yet known because the dependent resource does not exist yet, set the `skip_default_roles = true`.
+This is because one `rbac_policy` can contain several roles for the same principal, so to prevent TF from creating default roles for each time the same principal_id occurs
+they are deduplicated - this requires knowing the principal_id value at plan time.
+Alternatively, you could create the dependency resource first then re-enable default roles so the principal_id becomes known at plan time.
 
 ## Versioning
 
@@ -131,6 +135,8 @@ Quick reference (double check above for changes/updates):
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | n/a | `string` | `""` | no |
 | <a name="input_secret_permissions"></a> [secret\_permissions](#input\_secret\_permissions) | n/a | `list(string)` | <pre>[<br/>  "Set",<br/>  "List",<br/>  "Get",<br/>  "Delete",<br/>  "Recover",<br/>  "Purge"<br/>]</pre> | no |
 | <a name="input_secrets"></a> [secrets](#input\_secrets) | A map of secrets for the Key Vault. | `map(string)` | `{}` | no |
+| <a name="input_skip_ci_kv_admin_role"></a> [skip\_ci\_kv\_admin\_role](#input\_skip\_ci\_kv\_admin\_role) | Whether to skip the creation of the CI KV admin role for the Key Vault. | `bool` | `false` | no |
+| <a name="input_skip_default_roles"></a> [skip\_default\_roles](#input\_skip\_default\_roles) | Whether to skip the creation of default roles for the Key Vault. | `bool` | `false` | no |
 | <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name) | n/a | `string` | `""` | no |
 | <a name="input_soft_delete_retention_days"></a> [soft\_delete\_retention\_days](#input\_soft\_delete\_retention\_days) | n/a | `number` | `1` | no |
 | <a name="input_subnet_kv"></a> [subnet\_kv](#input\_subnet\_kv) | Subnet for key vault | `string` | `""` | no |
@@ -145,6 +151,35 @@ Quick reference (double check above for changes/updates):
 | <a name="output_name"></a> [name](#output\_name) | Name of key vault created. |
 | <a name="output_vault_uri"></a> [vault\_uri](#output\_vault\_uri) | The URI of the Key Vault, used for performing operations on keys and secrets. |
 <!-- END_TF_DOCS -->
+
+## Running Terratest Locally
+
+This repository includes a root Makefile with helper targets for local Terratest runs.
+
+- `make az-login`: runs `az login` so Terraform can authenticate with Azure.
+- `make terratest-all`: runs all Terratest tests with `go test` (depends on `az-login`).
+- `make terratest-all-gotestsum`: runs all Terratest tests with `gotestsum` (depends on `az-login`).
+- `make terratest-role-assignments`: runs only role-assignment tests (depends on `az-login`).
+- `make terratest-role-assignments-gotestsum`: runs only role-assignment tests with `gotestsum` (depends on `az-login`).
+- `make terratest-test TEST_NAME='<regex>'`: universal target to run any test subset with `go test` (depends on `az-login`).
+- `make terratest-test-gotestsum TEST_NAME='<regex>'`: universal target to run any test subset with `gotestsum` (depends on `az-login`).
+
+Optional variables:
+
+- `TERRATEST_TIMEOUT` (default `30`) to control test timeout in minutes.
+
+Examples:
+
+```shell
+make terratest-all
+make terratest-all-gotestsum
+make terratest-role-assignments
+make terratest-role-assignments-gotestsum
+make terratest-test TEST_NAME='^TestRoleAssignments_EmptyRbacPolicy$'
+make terratest-test-gotestsum TEST_NAME='^TestRoleAssignments_'
+```
+
+Important: tests that perform real `terraform apply`/resource creation and then `destroy` may fail for users without sufficient Azure permissions in the target subscription/tenant.
 
 ## Contributing
 
